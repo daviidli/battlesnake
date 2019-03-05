@@ -4,9 +4,11 @@ import random
 import bottle
 
 from api import ping_response, start_response, move_response, end_response
-from game import initializeMap
-from points import getDir
+from attempt import Snake, A
 
+
+game = None
+turn = -1
 
 @bottle.route('/')
 def index():
@@ -40,53 +42,37 @@ def ping():
 def start():
     data = bottle.request.json
 
-    """
-    TODO: If you intend to have a stateful snake AI,
-            initialize your snake state here using the
-            request's data if necessary.
-    """
-    print(json.dumps(data))
+    global game
+    game = A(
+        data["you"],
+        data["board"]["height"],
+        data["board"]["width"],
+        data["board"]["snakes"],
+        data["board"]["food"]
+    )
+    # print(json.dumps(data))
 
-    color = "#16A085"
+    color = "#e74c3c"
 
     return start_response(color)
-
-
-def get_facing_dir(head, nn):
-    if head["x"] == nn["x"]:
-        if head["y"] + 1 == nn["y"]:
-            return "up"
-        else:
-            return "down"
-    else:
-        if head["x"] + 1 == nn["x"]:
-            return "left"
-        else:
-            return "right"
 
 
 @bottle.post('/move')
 def move():
     data = bottle.request.json
 
-    """
-    TODO: Using the data from the endpoint request object, your
-            snake AI must choose a direction to move in.
-    """
     # print(json.dumps(data))
+    global turn
+    turn += 1
+    print(turn)
+    global game
+    game.update(data["board"]["food"], data["board"]["snakes"], data["you"])
+    d = game.find_direction()
 
     # directions = ['up', 'down', 'left', 'right']
     # direction = random.choice(directions)
 
-    data_board = data["board"]
-    board = initializeMap(data_board["height"], data_board["width"], data_board["food"], data_board["snakes"], data["you"])
-    # print(board)
-
-    head = data["you"]["body"][0]
-    # print(head)
-    mm = getDir(board, head, get_facing_dir(head, data["you"]["body"][1]))
-
-    return move_response(mm)
+    return move_response(d)
 
 
 @bottle.post('/end')
@@ -97,7 +83,7 @@ def end():
     TODO: If your snake AI was stateful,
         clean up any stateful objects here.
     """
-    print(json.dumps(data))
+    # print(json.dumps(data))
 
     return end_response()
 
